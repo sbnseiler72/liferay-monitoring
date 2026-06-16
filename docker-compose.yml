@@ -1,0 +1,147 @@
+version: '3.7'
+
+# =============================================================================
+# Liferay Monitor Stack
+# Standalone — connects to your Liferay stack via external Docker network.
+# Configure all settings in .env before starting.
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # cAdvisor — Docker container metrics (CPU, RAM, network, disk I/O)
+  # ---------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: lf_monitor_cadvisor
+    privileged: true
+    networks:
+      - monitor-internal
+      - liferay-stack
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18085:8080"
+    command:
+      - '--housekeeping_interval=15s'
+      - '--max_housekeeping_interval=30s'
+      - '--store_container_labels=true'
+
+  # ---------------------------------------------------------------------------
+  # JMX Exporter — Liferay JVM metrics (heap, GC, Tomcat threads, HikariCP)
+  # Connects to Liferay JMX port configured in setenv.sh
+  # ---------------------------------------------------------------------------
+  jmx_exporter:
+    image: bitnami/jmx-exporter:0.19.0
+    container_name: lf_monitor_jmx
+    networks:
+      - monitor-internal
+      - liferay-stack
+    ports:
+      - "127.0.0.1:19101:9101"
+    volumes:
+      - ./monitoring/jmx/config.yml:/opt/bitnami/jmx-exporter/config.yml:ro
+    command: ["9101", "/opt/bitnami/jmx-exporter/config.yml"]
+    restart: unless-stopped
+    environment:
+      LIFERAY_JMX_HOST: ${LIFERAY_JMX_HOST:-liferay}
+      LIFERAY_JMX_PORT: ${LIFERAY_JMX_PORT:-9999}
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Exporter — DB connection pool, query stats, table sizes
+  # ---------------------------------------------------------------------------
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: lf_monitor_postgres
+    networks:
+      - monitor-internal
+      - liferay-stack
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:19187:9187"
+
+  # ---------------------------------------------------------------------------
+  # Nginx Exporter — request rate, active connections, cache metrics
+  # ---------------------------------------------------------------------------
+  nginx_exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: lf_monitor_nginx
+    networks:
+      - monitor-internal
+      - liferay-stack
+    command:
+      - "-nginx.scrape-uri=${NGINX_STUB_STATUS_URL:-http://web-server/stub_status}"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:19113:9113"
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — scrapes all exporters, evaluates alert rules
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: lf_monitor_prometheus
+    networks:
+      - monitor-internal
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}'
+      - '--web.enable-lifecycle'
+      - '--web.listen-address=0.0.0.0:9090'
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:19090:9090"
+
+  # ---------------------------------------------------------------------------
+  # Grafana — dashboards and alert notifications
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: lf_monitor_grafana
+    networks:
+      - monitor-internal
+    volumes:
+      - ./monitoring/grafana/data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_SERVER_SERVE_FROM_SUB_PATH: ${GRAFANA_SERVE_FROM_SUBPATH:-false}
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-piechart-panel"
+      GF_ALERTING_ENABLED: "true"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13000:3000"
+    depends_on:
+      - prometheus
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+
+  # Internal monitoring network — only monitoring containers talk here
+  monitor-internal:
+    driver: bridge
+    name: lf-monitor-internal
+
+  # External network — YOUR Liferay stack network (must already exist)
+  liferay-stack:
+    external: true
+    name: ${LIFERAY_NETWORK:-liferay-backend}

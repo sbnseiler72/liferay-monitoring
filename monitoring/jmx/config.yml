@@ -1,0 +1,186 @@
+# =============================================================================
+# JMX Exporter config for Liferay 7.x / Tomcat 9 / HikariCP
+# hostPort is read from environment variable substitution at runtime
+# =============================================================================
+
+hostPort: "${LIFERAY_JMX_HOST}:${LIFERAY_JMX_PORT}"
+ssl: false
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+rules:
+
+  # ---------------------------------------------------------------------------
+  # JVM Heap Memory
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
+    name: jvm_heap_used_bytes
+    type: GAUGE
+    help: "JVM heap memory used in bytes"
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>max'
+    name: jvm_heap_max_bytes
+    type: GAUGE
+    help: "JVM heap memory max in bytes"
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>committed'
+    name: jvm_heap_committed_bytes
+    type: GAUGE
+    help: "JVM heap memory committed in bytes"
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>init'
+    name: jvm_heap_init_bytes
+    type: GAUGE
+    help: "JVM heap memory initial allocation in bytes"
+
+  # ---------------------------------------------------------------------------
+  # JVM Non-Heap (Metaspace) — OSGi classloader leak indicator
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>used'
+    name: jvm_nonheap_used_bytes
+    type: GAUGE
+    help: "JVM non-heap (metaspace) used in bytes"
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>committed'
+    name: jvm_nonheap_committed_bytes
+    type: GAUGE
+    help: "JVM non-heap committed in bytes"
+
+  # ---------------------------------------------------------------------------
+  # G1GC — Young Generation (frequent, short pauses)
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionCount'
+    name: jvm_gc_young_count_total
+    type: COUNTER
+    help: "G1 Young Generation GC collection count"
+
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionTime'
+    name: jvm_gc_young_time_ms_total
+    type: COUNTER
+    help: "G1 Young Generation GC total time in ms"
+
+  # ---------------------------------------------------------------------------
+  # G1GC — Old Generation (rare, long pauses — crash precursor)
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionCount'
+    name: jvm_gc_old_count_total
+    type: COUNTER
+    help: "G1 Old Generation GC count — non-zero means Full GC occurred"
+
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionTime'
+    name: jvm_gc_old_time_ms_total
+    type: COUNTER
+    help: "G1 Old Generation GC total time in ms"
+
+  # ---------------------------------------------------------------------------
+  # Tomcat Thread Pool — http-nio-8080
+  # Critical for detecting filter thread exhaustion
+  # ---------------------------------------------------------------------------
+  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadCount'
+    name: tomcat_threads_current
+    type: GAUGE
+    help: "Tomcat current thread count"
+
+  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadsBusy'
+    name: tomcat_threads_busy
+    type: GAUGE
+    help: "Tomcat busy threads — high value means thread pool pressure"
+
+  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>maxThreads'
+    name: tomcat_threads_max
+    type: GAUGE
+    help: "Tomcat max thread pool size"
+
+  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>connectionCount'
+    name: tomcat_connections_current
+    type: GAUGE
+    help: "Tomcat current active connections"
+
+  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>acceptCount'
+    name: tomcat_accept_count
+    type: GAUGE
+    help: "Tomcat accept queue length"
+
+  # ---------------------------------------------------------------------------
+  # Tomcat Request Processor
+  # ---------------------------------------------------------------------------
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>requestCount'
+    name: tomcat_request_count_total
+    type: COUNTER
+    help: "Tomcat total requests processed"
+
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>errorCount'
+    name: tomcat_error_count_total
+    type: COUNTER
+    help: "Tomcat total error responses"
+
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>processingTime'
+    name: tomcat_processing_time_ms_total
+    type: COUNTER
+    help: "Tomcat total request processing time in ms"
+
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesReceived'
+    name: tomcat_bytes_received_total
+    type: COUNTER
+    help: "Tomcat total bytes received"
+
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesSent'
+    name: tomcat_bytes_sent_total
+    type: COUNTER
+    help: "Tomcat total bytes sent"
+
+  # ---------------------------------------------------------------------------
+  # HikariCP Connection Pool
+  # ---------------------------------------------------------------------------
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>ActiveConnections'
+    name: hikaricp_active_connections
+    type: GAUGE
+    help: "HikariCP active DB connections"
+
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>PendingConnections'
+    name: hikaricp_pending_connections
+    type: GAUGE
+    help: "HikariCP threads waiting for a connection — non-zero means DB bottleneck"
+
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>IdleConnections'
+    name: hikaricp_idle_connections
+    type: GAUGE
+    help: "HikariCP idle connections"
+
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>TotalConnections'
+    name: hikaricp_total_connections
+    type: GAUGE
+    help: "HikariCP total connections in pool"
+
+  # ---------------------------------------------------------------------------
+  # OS / System metrics
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=OperatingSystem><>OpenFileDescriptorCount'
+    name: jvm_open_file_descriptors
+    type: GAUGE
+    help: "JVM open file descriptor count"
+
+  - pattern: 'java.lang<type=OperatingSystem><>MaxFileDescriptorCount'
+    name: jvm_max_file_descriptors
+    type: GAUGE
+    help: "JVM max file descriptor limit"
+
+  - pattern: 'java.lang<type=OperatingSystem><>SystemCpuLoad'
+    name: system_cpu_load_ratio
+    type: GAUGE
+    help: "System-wide CPU load (0.0-1.0)"
+
+  - pattern: 'java.lang<type=OperatingSystem><>ProcessCpuLoad'
+    name: jvm_process_cpu_load_ratio
+    type: GAUGE
+    help: "JVM process CPU load (0.0-1.0)"
+
+  - pattern: 'java.lang<type=OperatingSystem><>FreePhysicalMemorySize'
+    name: os_free_memory_bytes
+    type: GAUGE
+    help: "OS free physical memory in bytes"
+
+  - pattern: 'java.lang<type=OperatingSystem><>TotalPhysicalMemorySize'
+    name: os_total_memory_bytes
+    type: GAUGE
+    help: "OS total physical memory in bytes"

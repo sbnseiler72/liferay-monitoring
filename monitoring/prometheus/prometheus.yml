@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'liferay-monitor'
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['lf_monitor_cadvisor:8080']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  - job_name: liferay_jvm
+    static_configs:
+      - targets: ['lf_monitor_jmx:9101']
+    scrape_interval: 15s
+
+  - job_name: postgresql
+    static_configs:
+      - targets: ['lf_monitor_postgres:9187']
+    scrape_interval: 15s
+
+  - job_name: nginx
+    static_configs:
+      - targets: ['lf_monitor_nginx:9113']
+    scrape_interval: 15s
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

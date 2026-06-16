@@ -1,0 +1,28 @@
+# =============================================================================
+# ADD to your existing Liferay docker-compose.yml
+# =============================================================================
+
+# 1. Under the liferay service → ports section, add:
+#
+#   liferay:
+#     ports:
+#       - '127.0.0.1:9999:9999'   # JMX for Prometheus jmx_exporter
+#       # ... your existing ports
+
+
+# 2. IMPORTANT — your existing network must allow external attachment.
+#    In your docker-compose.yml networks section, verify:
+#
+#   networks:
+#     liferay-backend:
+#       driver: bridge
+#       name: liferay-backend    # ← this name goes in liferay-monitor/.env as LIFERAY_NETWORK
+#
+#    The monitor stack joins this network as external — no changes needed
+#    as long as the name matches what you set in LIFERAY_NETWORK in .env
+
+
+# =============================================================================
+# After making changes, restart only liferay service to activate JMX:
+#   docker-compose restart liferay
+# =============================================================================

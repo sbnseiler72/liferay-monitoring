@@ -1,0 +1,9 @@
+# Data directories — never commit these
+monitoring/prometheus/data/
+monitoring/grafana/data/
+
+# Secrets
+.env
+
+# Keep .env.example
+!.env

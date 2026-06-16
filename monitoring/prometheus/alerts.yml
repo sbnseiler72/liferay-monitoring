@@ -1,0 +1,293 @@
+groups:
+
+  # =============================================================================
+  # JVM Alerts — heap pressure, GC storms, thread exhaustion
+  # =============================================================================
+  - name: liferay_jvm
+    rules:
+
+      - alert: JvmHeapCritical
+        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.85
+        for: 2m
+        labels:
+          severity: critical
+          component: jvm
+        annotations:
+          summary: "JVM heap critical ({{ $value | humanizePercentage }})"
+          description: >
+            JVM heap usage is {{ $value | humanizePercentage }}.
+            Risk of G1GC to-space exhausted crash.
+            Check for cache bloat or classloader leak.
+
+      - alert: JvmHeapHigh
+        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.70
+        for: 5m
+        labels:
+          severity: warning
+          component: jvm
+        annotations:
+          summary: "JVM heap high ({{ $value | humanizePercentage }})"
+          description: "JVM heap usage above 70% for 5 minutes."
+
+      - alert: JvmFullGcDetected
+        expr: increase(jvm_gc_old_count_total[5m]) > 0
+        labels:
+          severity: warning
+          component: jvm
+        annotations:
+          summary: "JVM Full GC (G1 Old Generation) triggered"
+          description: >
+            G1 Old Generation GC occurred.
+            If recurring frequently, check for memory leak or oversized caches.
+
+      - alert: JvmGcPauseHigh
+        expr: >
+          rate(jvm_gc_young_time_ms_total[5m]) /
+          rate(jvm_gc_young_count_total[5m]) > 500
+        for: 3m
+        labels:
+          severity: warning
+          component: jvm
+        annotations:
+          summary: "JVM GC pause time high ({{ $value }}ms avg)"
+          description: >
+            Average GC pause exceeds 500ms.
+            MaxGCPauseMillis=200 is configured but not being met.
+
+      - alert: JvmMetaspaceHigh
+        expr: jvm_nonheap_used_bytes > 480000000
+        for: 5m
+        labels:
+          severity: warning
+          component: jvm
+        annotations:
+          summary: "JVM Metaspace near limit ({{ $value | humanize }}B)"
+          description: >
+            Metaspace usage approaching 512MB cap.
+            Possible OSGi classloader leak — check bundle redeploys.
+
+      - alert: JvmFileDescriptorHigh
+        expr: jvm_open_file_descriptors / jvm_max_file_descriptors > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: jvm
+        annotations:
+          summary: "JVM file descriptors high ({{ $value | humanizePercentage }})"
+          description: "Open file descriptors at {{ $value | humanizePercentage }} of limit."
+
+  # =============================================================================
+  # Tomcat Thread Pool — thread exhaustion detection
+  # =============================================================================
+  - name: liferay_tomcat
+    rules:
+
+      - alert: TomcatThreadPoolCritical
+        expr: tomcat_threads_busy / tomcat_threads_max > 0.80
+        for: 1m
+        labels:
+          severity: critical
+          component: tomcat
+        annotations:
+          summary: "Tomcat thread pool critical ({{ $value | humanizePercentage }} busy)"
+          description: >
+            {{ $value | humanizePercentage }} of Tomcat threads are busy.
+            Risk of portal hang. Check for blocking filters or slow DB queries.
+            Known cause: servlet filter making synchronous DB/HTTP calls on url-pattern=/*.
+
+      - alert: TomcatThreadPoolHigh
+        expr: tomcat_threads_busy / tomcat_threads_max > 0.60
+        for: 3m
+        labels:
+          severity: warning
+          component: tomcat
+        annotations:
+          summary: "Tomcat thread pool high ({{ $value | humanizePercentage }} busy)"
+          description: "More than 60% of Tomcat threads busy for 3 minutes."
+
+      - alert: TomcatErrorRateHigh
+        expr: >
+          rate(tomcat_error_count_total[5m]) /
+          rate(tomcat_request_count_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          component: tomcat
+        annotations:
+          summary: "Tomcat error rate high ({{ $value | humanizePercentage }})"
+          description: "More than 5% of Tomcat requests are returning errors."
+
+  # =============================================================================
+  # Container Resource Alerts
+  # =============================================================================
+  - name: liferay_container
+    rules:
+
+      - alert: LiferayMemoryCritical
+        expr: container_memory_usage_bytes{name="liferay"} > 13000000000
+        for: 2m
+        labels:
+          severity: critical
+          component: container
+        annotations:
+          summary: "Liferay container RAM critical ({{ $value | humanize }}B)"
+          description: >
+            Liferay container memory above 13GB.
+            JVM heap is 12GB — non-heap overhead is excessive.
+            Risk of OS OOM kill.
+
+      - alert: LiferayMemoryHigh
+        expr: container_memory_usage_bytes{name="liferay"} > 11000000000
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "Liferay container RAM high ({{ $value | humanize }}B)"
+          description: "Liferay container memory above 11GB."
+
+      - alert: LiferayCpuSustainedHigh
+        expr: rate(container_cpu_usage_seconds_total{name="liferay"}[5m]) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "Liferay CPU sustained high ({{ $value | humanize }}%)"
+          description: >
+            Liferay CPU above 90% for 5 minutes.
+            Possible GC storm, indexing burst, or thread deadlock.
+
+      - alert: ElasticsearchMemoryHigh
+        expr: container_memory_usage_bytes{name="elasticsearch"} > 3500000000
+        for: 3m
+        labels:
+          severity: warning
+          component: elasticsearch
+        annotations:
+          summary: "Elasticsearch memory approaching limit ({{ $value | humanize }}B)"
+          description: "Elasticsearch container approaching 3GB mem_limit."
+
+      - alert: ContainerOomKilled
+        expr: container_oom_events_total > 0
+        labels:
+          severity: critical
+          component: container
+        annotations:
+          summary: "Container OOM killed: {{ $labels.name }}"
+          description: "Container {{ $labels.name }} was OOM killed by the kernel."
+
+      - alert: ContainerRestartDetected
+        expr: increase(container_start_time_seconds[10m]) > 0
+        labels:
+          severity: critical
+          component: container
+        annotations:
+          summary: "Container restarted: {{ $labels.name }}"
+          description: "Container {{ $labels.name }} restarted in the last 10 minutes."
+
+  # =============================================================================
+  # PostgreSQL Alerts
+  # =============================================================================
+  - name: postgresql
+    rules:
+
+      - alert: PostgresConnectionsHigh
+        expr: pg_stat_activity_count > 40
+        for: 2m
+        labels:
+          severity: warning
+          component: postgresql
+        annotations:
+          summary: "PostgreSQL connections high ({{ $value }})"
+          description: >
+            {{ $value }} active PostgreSQL connections.
+            HikariCP pool max is 50 — approaching limit.
+
+      - alert: PostgresConnectionsCritical
+        expr: pg_stat_activity_count > 48
+        for: 1m
+        labels:
+          severity: critical
+          component: postgresql
+        annotations:
+          summary: "PostgreSQL connections critical ({{ $value }})"
+          description: "PostgreSQL almost at connection limit. New connections will be rejected."
+
+      - alert: HikariCpPendingConnections
+        expr: hikaricp_pending_connections > 5
+        for: 1m
+        labels:
+          severity: warning
+          component: postgresql
+        annotations:
+          summary: "HikariCP {{ $value }} connections waiting for pool slot"
+          description: >
+            Threads are waiting for a DB connection.
+            Either increase maximumPoolSize or reduce DB query time.
+
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL exporter cannot connect to database."
+
+  # =============================================================================
+  # Nginx Alerts
+  # =============================================================================
+  - name: nginx
+    rules:
+
+      - alert: NginxDown
+        expr: nginx_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: nginx
+        annotations:
+          summary: "Nginx is down"
+          description: "Nginx is not responding to stub_status requests."
+
+      - alert: NginxConnectionsHigh
+        expr: nginx_connections_active > 500
+        for: 2m
+        labels:
+          severity: warning
+          component: nginx
+        annotations:
+          summary: "Nginx active connections high ({{ $value }})"
+          description: "Nginx has {{ $value }} active connections."
+
+  # =============================================================================
+  # Disk Space Alerts
+  # =============================================================================
+  - name: disk
+    rules:
+
+      - alert: DiskSpaceHigh
+        expr: >
+          (container_fs_usage_bytes{name="liferay"} /
+           container_fs_limit_bytes{name="liferay"}) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: disk
+        annotations:
+          summary: "Liferay container disk usage high ({{ $value | humanizePercentage }})"
+          description: "Document library or logs consuming significant disk space."
+
+      - alert: DiskSpaceCritical
+        expr: >
+          (container_fs_usage_bytes{name="liferay"} /
+           container_fs_limit_bytes{name="liferay"}) > 0.90
+        for: 2m
+        labels:
+          severity: critical
+          component: disk
+        annotations:
+          summary: "Liferay container disk critical ({{ $value | humanizePercentage }})"
+          description: "Disk almost full. PDF processing and uploads will fail."
