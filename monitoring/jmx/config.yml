@@ -11,7 +11,7 @@ lowercaseOutputLabelNames: true
 rules:
 
   # ---------------------------------------------------------------------------
-  # JVM Heap Memory
+  # JVM Heap Memory — custom names (used by alert rules)
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
     name: jvm_heap_used_bytes
@@ -45,6 +45,57 @@ rules:
     name: jvm_nonheap_committed_bytes
     type: GAUGE
     help: "JVM non-heap committed in bytes"
+
+  # ---------------------------------------------------------------------------
+  # JVM Memory — Micrometer-compatible names for Grafana dashboard 8563
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "JVM memory used in bytes"
+    labels:
+      area: heap
+      id: "Heap"
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "JVM memory max in bytes"
+    labels:
+      area: heap
+      id: "Heap"
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "JVM memory committed in bytes"
+    labels:
+      area: heap
+      id: "Heap"
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "JVM memory used in bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "JVM memory max in bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "JVM memory committed in bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
 
   # ---------------------------------------------------------------------------
   # G1GC — Young Generation (frequent, short pauses)
@@ -184,3 +235,102 @@ rules:
     name: os_total_memory_bytes
     type: GAUGE
     help: "OS total physical memory in bytes"
+
+  # ---------------------------------------------------------------------------
+  # CPU — Micrometer-compatible names for Grafana dashboard 8563
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=OperatingSystem><>ProcessCpuLoad'
+    name: process_cpu_usage
+    type: GAUGE
+    help: "JVM process CPU load (0.0-1.0)"
+
+  - pattern: 'java.lang<type=OperatingSystem><>SystemCpuLoad'
+    name: system_cpu_usage
+    type: GAUGE
+    help: "System-wide CPU load (0.0-1.0)"
+
+  # ---------------------------------------------------------------------------
+  # JVM Threads — Micrometer-compatible names for Grafana dashboard 8563
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Threading><>ThreadCount'
+    name: jvm_threads_live_threads
+    type: GAUGE
+    help: "JVM live thread count"
+
+  - pattern: 'java.lang<type=Threading><>DaemonThreadCount'
+    name: jvm_threads_daemon_threads
+    type: GAUGE
+    help: "JVM daemon thread count"
+
+  - pattern: 'java.lang<type=Threading><>PeakThreadCount'
+    name: jvm_threads_peak_threads
+    type: GAUGE
+    help: "JVM peak thread count since JVM start or last reset"
+
+  - pattern: 'java.lang<type=Threading><>TotalStartedThreadCount'
+    name: jvm_threads_started_threads_total
+    type: COUNTER
+    help: "JVM total threads started since JVM start"
+
+  # ---------------------------------------------------------------------------
+  # JVM Class Loading — Micrometer-compatible names for Grafana dashboard 8563
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=ClassLoading><>LoadedClassCount'
+    name: jvm_classes_loaded_classes
+    type: GAUGE
+    help: "JVM currently loaded class count"
+
+  - pattern: 'java.lang<type=ClassLoading><>UnloadedClassCount'
+    name: jvm_classes_unloaded_classes_total
+    type: COUNTER
+    help: "JVM total unloaded class count since JVM start"
+
+  # ---------------------------------------------------------------------------
+  # GC Pause — Micrometer-compatible approximation for Grafana dashboard 8563
+  # Note: values are in milliseconds (JMX source); dashboard 8563 expects seconds
+  # but panels will still show relative trends correctly
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionCount'
+    name: jvm_gc_pause_seconds_count
+    type: COUNTER
+    help: "GC pause count (G1 Young Generation)"
+    labels:
+      action: "end of minor GC"
+      cause: "G1 Evacuation Pause"
+
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionTime'
+    name: jvm_gc_pause_seconds_sum
+    type: COUNTER
+    help: "GC pause total time in ms (G1 Young Generation)"
+    labels:
+      action: "end of minor GC"
+      cause: "G1 Evacuation Pause"
+
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionCount'
+    name: jvm_gc_pause_seconds_count
+    type: COUNTER
+    help: "GC pause count (G1 Old Generation)"
+    labels:
+      action: "end of major GC"
+      cause: "G1 Humongous Allocation"
+
+  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionTime'
+    name: jvm_gc_pause_seconds_sum
+    type: COUNTER
+    help: "GC pause total time in ms (G1 Old Generation)"
+    labels:
+      action: "end of major GC"
+      cause: "G1 Humongous Allocation"
+
+  # ---------------------------------------------------------------------------
+  # Process Uptime — used by dashboard 8563 uptime panel
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Runtime><>Uptime'
+    name: process_uptime_seconds
+    type: GAUGE
+    help: "JVM uptime in milliseconds (displayed as seconds by dashboard)"
+
+  - pattern: 'java.lang<type=Runtime><>StartTime'
+    name: process_start_time_seconds
+    type: GAUGE
+    help: "JVM start time in milliseconds since epoch"
