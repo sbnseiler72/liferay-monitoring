@@ -398,12 +398,12 @@ rules:
   # OS / System metrics
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=OperatingSystem><>OpenFileDescriptorCount'
-    name: jvm_open_file_descriptors
+    name: process_files_open_files
     type: GAUGE
     help: "JVM open file descriptor count"
 
   - pattern: 'java.lang<type=OperatingSystem><>MaxFileDescriptorCount'
-    name: jvm_max_file_descriptors
+    name: process_files_max_files
     type: GAUGE
     help: "JVM max file descriptor limit"
 
@@ -416,6 +416,16 @@ rules:
     name: process_cpu_usage
     type: GAUGE
     help: "JVM process CPU load (0.0-1.0)"
+
+  - pattern: 'java.lang<type=OperatingSystem><>AvailableProcessors'
+    name: system_cpu_count
+    type: GAUGE
+    help: "Number of available CPU processors"
+
+  - pattern: 'java.lang<type=OperatingSystem><>SystemLoadAverage'
+    name: system_load_average_1m
+    type: GAUGE
+    help: "System load average for the last minute"
 
   - pattern: 'java.lang<type=OperatingSystem><>FreePhysicalMemorySize'
     name: os_free_memory_bytes

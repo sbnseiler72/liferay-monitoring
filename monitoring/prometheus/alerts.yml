@@ -1,6 +1,17 @@
 groups:
 
   # =============================================================================
+  # Recording rules — metric aliases for dashboard compatibility
+  # process_threads is the same value as jvm_threads_live_threads; jmx_exporter
+  # cannot export the same MBean attribute under two names (first-match-wins),
+  # so we derive the alias here instead.
+  # =============================================================================
+  - name: liferay_recording
+    rules:
+      - record: process_threads
+        expr: jvm_threads_live_threads
+
+  # =============================================================================
   # JVM Alerts — heap pressure, GC storms, thread exhaustion
   # =============================================================================
   - name: liferay_jvm
@@ -67,7 +78,7 @@ groups:
             Possible OSGi classloader leak — check bundle redeploys.
 
       - alert: JvmFileDescriptorHigh
-        expr: jvm_open_file_descriptors / jvm_max_file_descriptors > 0.80
+        expr: process_files_open_files / process_files_max_files > 0.80
         for: 5m
         labels:
           severity: warning
