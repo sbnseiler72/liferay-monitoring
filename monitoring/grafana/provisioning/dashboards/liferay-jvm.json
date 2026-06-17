@@ -108,13 +108,13 @@
       "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
     },
 
-    { "id": 13, "type": "timeseries", "title": "Heap Pool Breakdown (G1 Regions — used)",
+    { "id": 13, "type": "timeseries", "title": "Heap Pool Breakdown (used)",
       "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "jvm_memory_used_bytes{id=\"G1 Eden Space\"}", "legendFormat": "Eden" },
-        { "expr": "jvm_memory_used_bytes{id=\"G1 Old Gen\"}", "legendFormat": "Old Gen" },
-        { "expr": "jvm_memory_used_bytes{id=\"G1 Survivor Space\"}", "legendFormat": "Survivor" }
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Ee]den.*\"}", "legendFormat": "Eden" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Oo]ld.*\"}", "legendFormat": "Old Gen" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Ss]urvivor.*\"}", "legendFormat": "Survivor" }
       ],
       "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 15, "stacking": { "mode": "normal" } } } }
     },
@@ -123,11 +123,11 @@
       "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "jvm_memory_used_bytes{id=\"Metaspace\"}", "legendFormat": "Metaspace" },
-        { "expr": "jvm_memory_used_bytes{id=\"Compressed Class Space\"}", "legendFormat": "Compressed Class Space" },
-        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'non-nmethods'\"}", "legendFormat": "CodeHeap non-nmethods" },
-        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'profiled nmethods'\"}", "legendFormat": "CodeHeap profiled" },
-        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'non-profiled nmethods'\"}", "legendFormat": "CodeHeap non-profiled" }
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Mm]etaspace.*\"}", "legendFormat": "Metaspace" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Cc]ompressed.*\"}", "legendFormat": "Compressed Class Space" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Cc]ode[Hh]eap.*non.nmethods.*\"}", "legendFormat": "CodeHeap non-nmethods" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Cc]ode[Hh]eap.*profiled.*\"}", "legendFormat": "CodeHeap profiled" },
+        { "expr": "jvm_memory_pool_used_bytes{pool=~\".*[Cc]ode[Hh]eap.*non.profiled.*\"}", "legendFormat": "CodeHeap non-profiled" }
       ],
       "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
     },
@@ -135,20 +135,20 @@
     { "id": 20, "type": "row", "title": "Garbage Collection", "collapsed": false,
       "gridPos": { "x": 0, "y": 22, "w": 24, "h": 1 } },
 
-    { "id": 21, "type": "timeseries", "title": "GC Young — Collection Rate (per min)",
+    { "id": 21, "type": "timeseries", "title": "GC Collection Rate (per min, by collector)",
       "gridPos": { "x": 0, "y": 23, "w": 8, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(jvm_gc_pause_seconds_count{action=\"end of minor GC\"}[1m]) * 60", "legendFormat": "Young GC / min" }
+        { "expr": "rate(jvm_gc_collection_count_total[1m]) * 60", "legendFormat": "{{gc}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
     },
 
-    { "id": 22, "type": "timeseries", "title": "GC Young — Avg Pause Time (ms)",
+    { "id": 22, "type": "timeseries", "title": "GC Total Collection Time (ms/min, by collector)",
       "gridPos": { "x": 8, "y": 23, "w": 8, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(jvm_gc_pause_seconds_sum{action=\"end of minor GC\"}[5m]) / rate(jvm_gc_pause_seconds_count{action=\"end of minor GC\"}[5m]) > 0", "legendFormat": "Avg Pause ms" }
+        { "expr": "rate(jvm_gc_collection_time_ms_total[1m]) * 60", "legendFormat": "{{gc}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 },
         "thresholds": { "mode": "absolute", "steps": [
@@ -159,11 +159,11 @@
       }}
     },
 
-    { "id": 23, "type": "timeseries", "title": "GC Old Generation — Full GC Events (per 5 min)",
+    { "id": 23, "type": "timeseries", "title": "Old Gen / Full GC Events (per 5 min)",
       "gridPos": { "x": 16, "y": 23, "w": 8, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "increase(jvm_gc_pause_seconds_count{action=\"end of major GC\"}[5m])", "legendFormat": "Full GC events" }
+        { "expr": "increase(jvm_gc_collection_count_total{gc=~\".*[Oo]ld.*|.*[Ff]ull.*|.*[Mm]ajor.*\"}[5m])", "legendFormat": "{{gc}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 20 },
         "thresholds": { "mode": "absolute", "steps": [
@@ -252,9 +252,9 @@
       "gridPos": { "x": 0, "y": 58, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "tomcat_threads_busy", "legendFormat": "Busy" },
-        { "expr": "tomcat_threads_current", "legendFormat": "Current" },
-        { "expr": "tomcat_threads_max", "legendFormat": "Max" }
+        { "expr": "sum(tomcat_threads_busy)", "legendFormat": "Busy" },
+        { "expr": "sum(tomcat_threads_current)", "legendFormat": "Current" },
+        { "expr": "sum(tomcat_threads_max)", "legendFormat": "Max" }
       ],
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
     },
@@ -263,7 +263,7 @@
       "gridPos": { "x": 12, "y": 58, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "tomcat_threads_busy / tomcat_threads_max * 100 > 0", "legendFormat": "Thread Pool %" }
+        { "expr": "sum(tomcat_threads_busy) / sum(tomcat_threads_max) * 100 > 0", "legendFormat": "Thread Pool %" }
       ],
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 },
         "thresholds": { "mode": "absolute", "steps": [
@@ -278,8 +278,8 @@
       "gridPos": { "x": 0, "y": 66, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(tomcat_request_count_total[1m]) * 60", "legendFormat": "Requests / min" },
-        { "expr": "rate(tomcat_error_count_total[1m]) * 60", "legendFormat": "Errors / min" }
+        { "expr": "sum(rate(tomcat_request_count_total[1m])) * 60", "legendFormat": "Requests / min" },
+        { "expr": "sum(rate(tomcat_error_count_total[1m])) * 60", "legendFormat": "Errors / min" }
       ],
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
     },
@@ -288,8 +288,8 @@
       "gridPos": { "x": 12, "y": 66, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(tomcat_bytes_sent_total[1m])", "legendFormat": "Sent" },
-        { "expr": "rate(tomcat_bytes_received_total[1m])", "legendFormat": "Received" }
+        { "expr": "sum(rate(tomcat_bytes_sent_total[1m]))", "legendFormat": "Sent" },
+        { "expr": "sum(rate(tomcat_bytes_received_total[1m]))", "legendFormat": "Received" }
       ],
       "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
     },
@@ -298,7 +298,7 @@
       "gridPos": { "x": 0, "y": 74, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(tomcat_processing_time_ms_total[5m]) / rate(tomcat_request_count_total[5m]) > 0", "legendFormat": "Avg ms/request" }
+        { "expr": "sum(rate(tomcat_processing_time_ms_total[5m])) / sum(rate(tomcat_request_count_total[5m])) > 0", "legendFormat": "Avg ms/request" }
       ],
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
     },
@@ -307,7 +307,7 @@
       "gridPos": { "x": 12, "y": 74, "w": 12, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(tomcat_error_count_total[5m]) / rate(tomcat_request_count_total[5m]) * 100 > 0", "legendFormat": "Error %" }
+        { "expr": "sum(rate(tomcat_error_count_total[5m])) / sum(rate(tomcat_request_count_total[5m])) * 100 > 0", "legendFormat": "Error %" }
       ],
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "custom": { "lineWidth": 2, "fillOpacity": 10 },
         "thresholds": { "mode": "absolute", "steps": [

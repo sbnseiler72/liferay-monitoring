@@ -81,197 +81,49 @@ rules:
       id: "nonheap-total"
 
   # ---------------------------------------------------------------------------
-  # JVM Memory Pools — per-pool breakdown (G1 heap regions + nonheap pools)
-  # Dashboard 8563 uses jvm_memory_used_bytes{id="<pool name>"} for pool charts.
-  # Heap pools: G1 Eden Space, G1 Old Gen, G1 Survivor Space
-  # Nonheap pools: Metaspace, CodeHeap, Compressed Class Space
+  # JVM Memory Pools — wildcard captures any pool name registered by the JVM
+  # Works with G1GC, ZGC, Shenandoah, ParallelGC, etc.
+  # Heap vs nonheap area is inferred by pool name pattern.
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>used'
-    name: jvm_memory_used_bytes
+  - pattern: 'java.lang<type=MemoryPool,name=(.+)><Usage>used'
+    name: jvm_memory_pool_used_bytes
     type: GAUGE
-    help: "G1 Eden Space used bytes"
+    help: "JVM memory pool used bytes"
     labels:
-      area: heap
-      id: "G1 Eden Space"
+      pool: "$1"
 
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>max'
-    name: jvm_memory_max_bytes
+  - pattern: 'java.lang<type=MemoryPool,name=(.+)><Usage>max'
+    name: jvm_memory_pool_max_bytes
     type: GAUGE
-    help: "G1 Eden Space max bytes"
+    help: "JVM memory pool max bytes"
     labels:
-      area: heap
-      id: "G1 Eden Space"
+      pool: "$1"
 
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>committed'
-    name: jvm_memory_committed_bytes
+  - pattern: 'java.lang<type=MemoryPool,name=(.+)><Usage>committed'
+    name: jvm_memory_pool_committed_bytes
     type: GAUGE
-    help: "G1 Eden Space committed bytes"
+    help: "JVM memory pool committed bytes"
     labels:
-      area: heap
-      id: "G1 Eden Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>used'
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "G1 Old Gen used bytes"
-    labels:
-      area: heap
-      id: "G1 Old Gen"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>max'
-    name: jvm_memory_max_bytes
-    type: GAUGE
-    help: "G1 Old Gen max bytes"
-    labels:
-      area: heap
-      id: "G1 Old Gen"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>committed'
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "G1 Old Gen committed bytes"
-    labels:
-      area: heap
-      id: "G1 Old Gen"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>used'
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "G1 Survivor Space used bytes"
-    labels:
-      area: heap
-      id: "G1 Survivor Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>max'
-    name: jvm_memory_max_bytes
-    type: GAUGE
-    help: "G1 Survivor Space max bytes"
-    labels:
-      area: heap
-      id: "G1 Survivor Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>committed'
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "G1 Survivor Space committed bytes"
-    labels:
-      area: heap
-      id: "G1 Survivor Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>used'
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "Metaspace pool used bytes"
-    labels:
-      area: nonheap
-      id: "Metaspace"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>max'
-    name: jvm_memory_max_bytes
-    type: GAUGE
-    help: "Metaspace pool max bytes"
-    labels:
-      area: nonheap
-      id: "Metaspace"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>committed'
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "Metaspace pool committed bytes"
-    labels:
-      area: nonheap
-      id: "Metaspace"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-nmethods'><Usage>used"
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "CodeHeap non-nmethods used bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'non-nmethods'"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-nmethods'><Usage>committed"
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "CodeHeap non-nmethods committed bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'non-nmethods'"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'profiled nmethods'><Usage>used"
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "CodeHeap profiled nmethods used bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'profiled nmethods'"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'profiled nmethods'><Usage>committed"
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "CodeHeap profiled nmethods committed bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'profiled nmethods'"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-profiled nmethods'><Usage>used"
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "CodeHeap non-profiled nmethods used bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'non-profiled nmethods'"
-
-  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-profiled nmethods'><Usage>committed"
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "CodeHeap non-profiled nmethods committed bytes"
-    labels:
-      area: nonheap
-      id: "CodeHeap 'non-profiled nmethods'"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>used'
-    name: jvm_memory_used_bytes
-    type: GAUGE
-    help: "Compressed Class Space used bytes"
-    labels:
-      area: nonheap
-      id: "Compressed Class Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>max'
-    name: jvm_memory_max_bytes
-    type: GAUGE
-    help: "Compressed Class Space max bytes"
-    labels:
-      area: nonheap
-      id: "Compressed Class Space"
-
-  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>committed'
-    name: jvm_memory_committed_bytes
-    type: GAUGE
-    help: "Compressed Class Space committed bytes"
-    labels:
-      area: nonheap
-      id: "Compressed Class Space"
+      pool: "$1"
 
   # ---------------------------------------------------------------------------
-  # NIO Buffer Pools — direct and mapped buffers (dashboard 8563 buffer section)
+  # NIO Buffer Pools — direct and mapped buffers
   # ---------------------------------------------------------------------------
-  - pattern: 'java.nio<type=BufferPool,name=(.*)><>MemoryUsed'
+  - pattern: 'java.nio<type=BufferPool,name=(.+)><>MemoryUsed'
     name: jvm_buffer_memory_used_bytes
     type: GAUGE
     help: "NIO buffer pool memory used bytes"
     labels:
       id: "$1"
 
-  - pattern: 'java.nio<type=BufferPool,name=(.*)><>Count'
+  - pattern: 'java.nio<type=BufferPool,name=(.+)><>Count'
     name: jvm_buffer_count_buffers
     type: GAUGE
     help: "NIO buffer pool buffer count"
     labels:
       id: "$1"
 
-  - pattern: 'java.nio<type=BufferPool,name=(.*)><>TotalCapacity'
+  - pattern: 'java.nio<type=BufferPool,name=(.+)><>TotalCapacity'
     name: jvm_buffer_total_capacity_bytes
     type: GAUGE
     help: "NIO buffer pool total capacity bytes"
@@ -279,101 +131,103 @@ rules:
       id: "$1"
 
   # ---------------------------------------------------------------------------
-  # G1GC — Young Generation (frequent, short pauses)
+  # GC — wildcard captures any collector name (G1GC, ZGC, Shenandoah, etc.)
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionCount'
-    name: jvm_gc_pause_seconds_count
+  - pattern: 'java.lang<type=GarbageCollector,name=(.+)><>CollectionCount'
+    name: jvm_gc_collection_count_total
     type: COUNTER
-    help: "G1 Young Generation GC collection count"
+    help: "GC collection count by collector"
     labels:
-      action: "end of minor GC"
-      cause: "G1 Evacuation Pause"
+      gc: "$1"
 
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionTime'
-    name: jvm_gc_pause_seconds_sum
+  - pattern: 'java.lang<type=GarbageCollector,name=(.+)><>CollectionTime'
+    name: jvm_gc_collection_time_ms_total
     type: COUNTER
-    help: "G1 Young Generation GC total time in ms"
+    help: "GC total collection time in ms by collector"
     labels:
-      action: "end of minor GC"
-      cause: "G1 Evacuation Pause"
+      gc: "$1"
 
   # ---------------------------------------------------------------------------
-  # G1GC — Old Generation (rare, long pauses — crash precursor)
+  # Tomcat Thread Pool — wildcard captures any connector name
+  # (http-nio-8080, https-jsse-nio-8443, ajp-nio-8009, etc.)
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionCount'
-    name: jvm_gc_pause_seconds_count
-    type: COUNTER
-    help: "G1 Old Generation GC count — non-zero means Full GC occurred"
-    labels:
-      action: "end of major GC"
-      cause: "G1 Humongous Allocation"
-
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionTime'
-    name: jvm_gc_pause_seconds_sum
-    type: COUNTER
-    help: "G1 Old Generation GC total time in ms"
-    labels:
-      action: "end of major GC"
-      cause: "G1 Humongous Allocation"
-
-  # ---------------------------------------------------------------------------
-  # Tomcat Thread Pool — http-nio-8080
-  # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadCount'
+  - pattern: 'Catalina<type=ThreadPool,name=(.+)><>currentThreadCount'
     name: tomcat_threads_current
     type: GAUGE
     help: "Tomcat current thread count"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadsBusy'
+  - pattern: 'Catalina<type=ThreadPool,name=(.+)><>currentThreadsBusy'
     name: tomcat_threads_busy
     type: GAUGE
-    help: "Tomcat busy threads — high value means thread pool pressure"
+    help: "Tomcat busy threads"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>maxThreads'
+  - pattern: 'Catalina<type=ThreadPool,name=(.+)><>maxThreads'
     name: tomcat_threads_max
     type: GAUGE
     help: "Tomcat max thread pool size"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>connectionCount'
+  - pattern: 'Catalina<type=ThreadPool,name=(.+)><>connectionCount'
     name: tomcat_connections_current
     type: GAUGE
     help: "Tomcat current active connections"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>acceptCount'
+  - pattern: 'Catalina<type=ThreadPool,name=(.+)><>acceptCount'
     name: tomcat_accept_count
     type: GAUGE
     help: "Tomcat accept queue length"
+    labels:
+      connector: "$1"
 
   # ---------------------------------------------------------------------------
-  # Tomcat Request Processor
+  # Tomcat Request Processor — wildcard connector name
   # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>requestCount'
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name=(.+)><>requestCount'
     name: tomcat_request_count_total
     type: COUNTER
     help: "Tomcat total requests processed"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>errorCount'
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name=(.+)><>errorCount'
     name: tomcat_error_count_total
     type: COUNTER
     help: "Tomcat total error responses"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>processingTime'
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name=(.+)><>processingTime'
     name: tomcat_processing_time_ms_total
     type: COUNTER
     help: "Tomcat total request processing time in ms"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesReceived'
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name=(.+)><>bytesReceived'
     name: tomcat_bytes_received_total
     type: COUNTER
     help: "Tomcat total bytes received"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesSent'
+  - pattern: 'Catalina<type=GlobalRequestProcessor,name=(.+)><>bytesSent'
     name: tomcat_bytes_sent_total
     type: COUNTER
     help: "Tomcat total bytes sent"
+    labels:
+      connector: "$1"
 
   # ---------------------------------------------------------------------------
   # HikariCP Connection Pool
+  # PendingConnections attribute was removed in HikariCP 4.x; ThreadsAwaitingConnection
+  # is the replacement. Both patterns are included — whichever exists will match.
   # ---------------------------------------------------------------------------
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>ActiveConnections'
     name: hikaricp_active_connections
@@ -383,7 +237,12 @@ rules:
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>PendingConnections'
     name: hikaricp_pending_connections
     type: GAUGE
-    help: "HikariCP threads waiting for a connection — non-zero means DB bottleneck"
+    help: "HikariCP threads waiting for a connection"
+
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>ThreadsAwaitingConnection'
+    name: hikaricp_pending_connections
+    type: GAUGE
+    help: "HikariCP threads waiting for a connection"
 
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>IdleConnections'
     name: hikaricp_idle_connections
