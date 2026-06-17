@@ -7,7 +7,7 @@ groups:
     rules:
 
       - alert: JvmHeapCritical
-        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.85
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
         for: 2m
         labels:
           severity: critical
@@ -20,7 +20,7 @@ groups:
             Check for cache bloat or classloader leak.
 
       - alert: JvmHeapHigh
-        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.70
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.70
         for: 5m
         labels:
           severity: warning
@@ -30,7 +30,7 @@ groups:
           description: "JVM heap usage above 70% for 5 minutes."
 
       - alert: JvmFullGcDetected
-        expr: increase(jvm_gc_old_count_total[5m]) > 0
+        expr: increase(jvm_gc_pause_seconds_count{action="end of major GC"}[5m]) > 0
         labels:
           severity: warning
           component: jvm
@@ -42,8 +42,8 @@ groups:
 
       - alert: JvmGcPauseHigh
         expr: >
-          rate(jvm_gc_young_time_ms_total[5m]) /
-          rate(jvm_gc_young_count_total[5m]) > 500
+          rate(jvm_gc_pause_seconds_sum{action="end of minor GC"}[5m]) /
+          rate(jvm_gc_pause_seconds_count{action="end of minor GC"}[5m]) > 500
         for: 3m
         labels:
           severity: warning
@@ -55,7 +55,7 @@ groups:
             MaxGCPauseMillis=200 is configured but not being met.
 
       - alert: JvmMetaspaceHigh
-        expr: jvm_nonheap_used_bytes > 480000000
+        expr: jvm_memory_used_bytes{area="nonheap"} > 480000000
         for: 5m
         labels:
           severity: warning

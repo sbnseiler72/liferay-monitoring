@@ -34,7 +34,7 @@ Nginx:
 # =============================================================================
 
 Panel 1: Heap Usage % (Stat + Alert)
-  Query: jvm_heap_used_bytes / jvm_heap_max_bytes * 100
+  Query: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} * 100
   Thresholds: 70=yellow, 85=red
 
 Panel 2: Tomcat Thread Pool Usage %
@@ -46,9 +46,9 @@ Panel 3: HikariCP Pending Connections
   Thresholds: 1=yellow, 5=red
 
 Panel 4: GC Old Generation Events (Full GC)
-  Query: increase(jvm_gc_old_count_total[5m])
+  Query: increase(jvm_gc_pause_seconds_count{action="end of major GC"}[5m])
   Thresholds: 0=green, 1=red
 
 Panel 5: G1 Young GC Pause Time (ms avg)
-  Query: rate(jvm_gc_young_time_ms_total[5m]) / rate(jvm_gc_young_count_total[5m])
+  Query: rate(jvm_gc_pause_seconds_sum{action="end of minor GC"}[5m]) / rate(jvm_gc_pause_seconds_count{action="end of minor GC"}[5m])
   Thresholds: 200=green, 500=yellow, 1000=red
