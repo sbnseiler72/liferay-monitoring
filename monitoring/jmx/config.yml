@@ -53,31 +53,32 @@ rules:
       id: "Heap"
 
   # ---------------------------------------------------------------------------
-  # JVM Non-Heap / Metaspace (Micrometer names)
+  # JVM Non-Heap aggregate total (id="nonheap-total" — distinct from per-pool rules below)
+  # Using a different id avoids duplicate label sets with MemoryPool,name=Metaspace
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>used'
     name: jvm_memory_used_bytes
     type: GAUGE
-    help: "JVM non-heap memory used in bytes"
+    help: "JVM non-heap memory used in bytes (aggregate total)"
     labels:
       area: nonheap
-      id: "Metaspace"
+      id: "nonheap-total"
 
   - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>max'
     name: jvm_memory_max_bytes
     type: GAUGE
-    help: "JVM non-heap memory max in bytes"
+    help: "JVM non-heap memory max in bytes (aggregate total)"
     labels:
       area: nonheap
-      id: "Metaspace"
+      id: "nonheap-total"
 
   - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>committed'
     name: jvm_memory_committed_bytes
     type: GAUGE
-    help: "JVM non-heap memory committed in bytes"
+    help: "JVM non-heap memory committed in bytes (aggregate total)"
     labels:
       area: nonheap
-      id: "Metaspace"
+      id: "nonheap-total"
 
   # ---------------------------------------------------------------------------
   # JVM Memory Pools — per-pool breakdown (G1 heap regions + nonheap pools)
