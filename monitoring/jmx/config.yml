@@ -80,6 +80,204 @@ rules:
       id: "Metaspace"
 
   # ---------------------------------------------------------------------------
+  # JVM Memory Pools — per-pool breakdown (G1 heap regions + nonheap pools)
+  # Dashboard 8563 uses jvm_memory_used_bytes{id="<pool name>"} for pool charts.
+  # Heap pools: G1 Eden Space, G1 Old Gen, G1 Survivor Space
+  # Nonheap pools: Metaspace, CodeHeap, Compressed Class Space
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "G1 Eden Space used bytes"
+    labels:
+      area: heap
+      id: "G1 Eden Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "G1 Eden Space max bytes"
+    labels:
+      area: heap
+      id: "G1 Eden Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Eden Space><Usage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "G1 Eden Space committed bytes"
+    labels:
+      area: heap
+      id: "G1 Eden Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "G1 Old Gen used bytes"
+    labels:
+      area: heap
+      id: "G1 Old Gen"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "G1 Old Gen max bytes"
+    labels:
+      area: heap
+      id: "G1 Old Gen"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Old Gen><Usage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "G1 Old Gen committed bytes"
+    labels:
+      area: heap
+      id: "G1 Old Gen"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "G1 Survivor Space used bytes"
+    labels:
+      area: heap
+      id: "G1 Survivor Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "G1 Survivor Space max bytes"
+    labels:
+      area: heap
+      id: "G1 Survivor Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=G1 Survivor Space><Usage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "G1 Survivor Space committed bytes"
+    labels:
+      area: heap
+      id: "G1 Survivor Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "Metaspace pool used bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "Metaspace pool max bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Metaspace><Usage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "Metaspace pool committed bytes"
+    labels:
+      area: nonheap
+      id: "Metaspace"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-nmethods'><Usage>used"
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "CodeHeap non-nmethods used bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'non-nmethods'"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-nmethods'><Usage>committed"
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "CodeHeap non-nmethods committed bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'non-nmethods'"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'profiled nmethods'><Usage>used"
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "CodeHeap profiled nmethods used bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'profiled nmethods'"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'profiled nmethods'><Usage>committed"
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "CodeHeap profiled nmethods committed bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'profiled nmethods'"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-profiled nmethods'><Usage>used"
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "CodeHeap non-profiled nmethods used bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'non-profiled nmethods'"
+
+  - pattern: "java.lang<type=MemoryPool,name=CodeHeap 'non-profiled nmethods'><Usage>committed"
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "CodeHeap non-profiled nmethods committed bytes"
+    labels:
+      area: nonheap
+      id: "CodeHeap 'non-profiled nmethods'"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>used'
+    name: jvm_memory_used_bytes
+    type: GAUGE
+    help: "Compressed Class Space used bytes"
+    labels:
+      area: nonheap
+      id: "Compressed Class Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "Compressed Class Space max bytes"
+    labels:
+      area: nonheap
+      id: "Compressed Class Space"
+
+  - pattern: 'java.lang<type=MemoryPool,name=Compressed Class Space><Usage>committed'
+    name: jvm_memory_committed_bytes
+    type: GAUGE
+    help: "Compressed Class Space committed bytes"
+    labels:
+      area: nonheap
+      id: "Compressed Class Space"
+
+  # ---------------------------------------------------------------------------
+  # NIO Buffer Pools — direct and mapped buffers (dashboard 8563 buffer section)
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.nio<type=BufferPool,name=(.*)><>MemoryUsed'
+    name: jvm_buffer_memory_used_bytes
+    type: GAUGE
+    help: "NIO buffer pool memory used bytes"
+    labels:
+      id: "$1"
+
+  - pattern: 'java.nio<type=BufferPool,name=(.*)><>Count'
+    name: jvm_buffer_count_buffers
+    type: GAUGE
+    help: "NIO buffer pool buffer count"
+    labels:
+      id: "$1"
+
+  - pattern: 'java.nio<type=BufferPool,name=(.*)><>TotalCapacity'
+    name: jvm_buffer_total_capacity_bytes
+    type: GAUGE
+    help: "NIO buffer pool total capacity bytes"
+    labels:
+      id: "$1"
+
+  # ---------------------------------------------------------------------------
   # G1GC — Young Generation (frequent, short pauses)
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionCount'
