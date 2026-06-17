@@ -81,23 +81,25 @@ rules:
       id: "nonheap-total"
 
   # ---------------------------------------------------------------------------
-  # JVM Memory Pools — canonical ObjectName order is name=,type= (alphabetical)
+  # JVM Memory Pools
+  # jmx_exporter match string for multi-key beans omits domain and type= key:
+  #   java.lang:type=MemoryPool,name=Par Survivor Space → "MemoryPool, name=<n>><compositeKey>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<name=(.+),type=MemoryPool><Usage>used'
+  - pattern: 'MemoryPool, name=(.+)><Usage>used'
     name: jvm_memory_pool_used_bytes
     type: GAUGE
     help: "JVM memory pool used bytes"
     labels:
       pool: "$1"
 
-  - pattern: 'java.lang<name=(.+),type=MemoryPool><Usage>max'
+  - pattern: 'MemoryPool, name=(.+)><Usage>max'
     name: jvm_memory_pool_max_bytes
     type: GAUGE
     help: "JVM memory pool max bytes"
     labels:
       pool: "$1"
 
-  - pattern: 'java.lang<name=(.+),type=MemoryPool><Usage>committed'
+  - pattern: 'MemoryPool, name=(.+)><Usage>committed'
     name: jvm_memory_pool_committed_bytes
     type: GAUGE
     help: "JVM memory pool committed bytes"
@@ -105,23 +107,24 @@ rules:
       pool: "$1"
 
   # ---------------------------------------------------------------------------
-  # NIO Buffer Pools — canonical order: name=,type=
+  # NIO Buffer Pools
+  # java.nio:type=BufferPool,name=direct → "BufferPool, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'java.nio<name=(.+),type=BufferPool><>MemoryUsed'
+  - pattern: 'BufferPool, name=(.+)><>MemoryUsed'
     name: jvm_buffer_memory_used_bytes
     type: GAUGE
     help: "NIO buffer pool memory used bytes"
     labels:
       id: "$1"
 
-  - pattern: 'java.nio<name=(.+),type=BufferPool><>Count'
+  - pattern: 'BufferPool, name=(.+)><>Count'
     name: jvm_buffer_count_buffers
     type: GAUGE
     help: "NIO buffer pool buffer count"
     labels:
       id: "$1"
 
-  - pattern: 'java.nio<name=(.+),type=BufferPool><>TotalCapacity'
+  - pattern: 'BufferPool, name=(.+)><>TotalCapacity'
     name: jvm_buffer_total_capacity_bytes
     type: GAUGE
     help: "NIO buffer pool total capacity bytes"
@@ -129,16 +132,16 @@ rules:
       id: "$1"
 
   # ---------------------------------------------------------------------------
-  # GC — canonical order: name=,type=
+  # GC — java.lang:type=GarbageCollector,name=<n> → "GarbageCollector, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<name=(.+),type=GarbageCollector><>CollectionCount'
+  - pattern: 'GarbageCollector, name=(.+)><>CollectionCount'
     name: jvm_gc_collection_count_total
     type: COUNTER
     help: "GC collection count by collector"
     labels:
       gc: "$1"
 
-  - pattern: 'java.lang<name=(.+),type=GarbageCollector><>CollectionTime'
+  - pattern: 'GarbageCollector, name=(.+)><>CollectionTime'
     name: jvm_gc_collection_time_ms_total
     type: COUNTER
     help: "GC total collection time in ms by collector"
@@ -146,38 +149,37 @@ rules:
       gc: "$1"
 
   # ---------------------------------------------------------------------------
-  # Tomcat Thread Pool — canonical order: name=,type=
-  # Connector names may be quoted in JMX canonical form, e.g. "http-nio-8080"
+  # Tomcat Thread Pool — Catalina:type=ThreadPool,name=<n> → "ThreadPool, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<name=(.+),type=ThreadPool><>currentThreadCount'
+  - pattern: 'ThreadPool, name=(.+)><>currentThreadCount'
     name: tomcat_threads_current
     type: GAUGE
     help: "Tomcat current thread count"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=ThreadPool><>currentThreadsBusy'
+  - pattern: 'ThreadPool, name=(.+)><>currentThreadsBusy'
     name: tomcat_threads_busy
     type: GAUGE
     help: "Tomcat busy threads"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=ThreadPool><>maxThreads'
+  - pattern: 'ThreadPool, name=(.+)><>maxThreads'
     name: tomcat_threads_max
     type: GAUGE
     help: "Tomcat max thread pool size"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=ThreadPool><>connectionCount'
+  - pattern: 'ThreadPool, name=(.+)><>connectionCount'
     name: tomcat_connections_current
     type: GAUGE
     help: "Tomcat current active connections"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=ThreadPool><>acceptCount'
+  - pattern: 'ThreadPool, name=(.+)><>acceptCount'
     name: tomcat_accept_count
     type: GAUGE
     help: "Tomcat accept queue length"
@@ -185,37 +187,38 @@ rules:
       connector: "$1"
 
   # ---------------------------------------------------------------------------
-  # Tomcat Request Processor — canonical order: name=,type=
+  # Tomcat Request Processor — Catalina:type=GlobalRequestProcessor,name=<n>
+  #   → "GlobalRequestProcessor, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<name=(.+),type=GlobalRequestProcessor><>requestCount'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>requestCount'
     name: tomcat_request_count_total
     type: COUNTER
     help: "Tomcat total requests processed"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=GlobalRequestProcessor><>errorCount'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>errorCount'
     name: tomcat_error_count_total
     type: COUNTER
     help: "Tomcat total error responses"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=GlobalRequestProcessor><>processingTime'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>processingTime'
     name: tomcat_processing_time_ms_total
     type: COUNTER
     help: "Tomcat total request processing time in ms"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=GlobalRequestProcessor><>bytesReceived'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>bytesReceived'
     name: tomcat_bytes_received_total
     type: COUNTER
     help: "Tomcat total bytes received"
     labels:
       connector: "$1"
 
-  - pattern: 'Catalina<name=(.+),type=GlobalRequestProcessor><>bytesSent'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>bytesSent'
     name: tomcat_bytes_sent_total
     type: COUNTER
     help: "Tomcat total bytes sent"
