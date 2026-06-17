@@ -1,0 +1,384 @@
+{
+  "title": "Liferay JVM (JMX)",
+  "uid": "liferay-jvm",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "tags": ["liferay", "jvm"],
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "links": [],
+  "panels": [
+
+    { "id": 1, "type": "row", "title": "Overview", "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 } },
+
+    { "id": 2, "type": "stat", "title": "Heap Usage",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "jvm_memory_used_bytes{area=\"heap\",id=\"Heap\"} / jvm_memory_max_bytes{area=\"heap\",id=\"Heap\"} * 100", "legendFormat": "Heap %" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 70 },
+          { "color": "red", "value": 85 }
+        ]}
+      }}
+    },
+
+    { "id": 3, "type": "stat", "title": "Heap Used",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "jvm_memory_used_bytes{area=\"heap\",id=\"Heap\"}", "legendFormat": "Used" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "bytes",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}
+      }}
+    },
+
+    { "id": 4, "type": "stat", "title": "Heap Max",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "jvm_memory_max_bytes{area=\"heap\",id=\"Heap\"}", "legendFormat": "Max" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "bytes",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}
+      }}
+    },
+
+    { "id": 5, "type": "stat", "title": "Process CPU",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "process_cpu_usage * 100", "legendFormat": "CPU %" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 70 },
+          { "color": "red", "value": 90 }
+        ]}
+      }}
+    },
+
+    { "id": 6, "type": "stat", "title": "Live Threads",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "jvm_threads_live_threads", "legendFormat": "Threads" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}
+      }}
+    },
+
+    { "id": 7, "type": "stat", "title": "Uptime",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "process_uptime_seconds / 1000", "legendFormat": "Uptime" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "s",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}
+      }}
+    },
+
+    { "id": 10, "type": "row", "title": "Memory", "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 } },
+
+    { "id": 11, "type": "timeseries", "title": "Heap Memory (used / committed / max)",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"heap\",id=\"Heap\"}", "legendFormat": "Used" },
+        { "expr": "jvm_memory_committed_bytes{area=\"heap\",id=\"Heap\"}", "legendFormat": "Committed" },
+        { "expr": "jvm_memory_max_bytes{area=\"heap\",id=\"Heap\"}", "legendFormat": "Max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 12, "type": "timeseries", "title": "Non-Heap Memory — Metaspace (used / committed)",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"nonheap\",id=\"Metaspace\"}", "legendFormat": "Used" },
+        { "expr": "jvm_memory_committed_bytes{area=\"nonheap\",id=\"Metaspace\"}", "legendFormat": "Committed" },
+        { "expr": "jvm_memory_max_bytes{area=\"nonheap\",id=\"Metaspace\"}", "legendFormat": "Max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 13, "type": "timeseries", "title": "Heap Pool Breakdown (G1 Regions)",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{id=\"G1 Eden Space\"}", "legendFormat": "Eden" },
+        { "expr": "jvm_memory_used_bytes{id=\"G1 Old Gen\"}", "legendFormat": "Old Gen" },
+        { "expr": "jvm_memory_used_bytes{id=\"G1 Survivor Space\"}", "legendFormat": "Survivor" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 15, "stacking": { "mode": "normal" } } } }
+    },
+
+    { "id": 14, "type": "timeseries", "title": "Non-Heap Pool Breakdown (CodeHeap + Compressed Class)",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{id=\"Metaspace\"}", "legendFormat": "Metaspace" },
+        { "expr": "jvm_memory_used_bytes{id=\"Compressed Class Space\"}", "legendFormat": "Compressed Class Space" },
+        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'non-nmethods'\"}", "legendFormat": "CodeHeap non-nmethods" },
+        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'profiled nmethods'\"}", "legendFormat": "CodeHeap profiled" },
+        { "expr": "jvm_memory_used_bytes{id=\"CodeHeap 'non-profiled nmethods'\"}", "legendFormat": "CodeHeap non-profiled" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 20, "type": "row", "title": "Garbage Collection", "collapsed": false,
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 1 } },
+
+    { "id": 21, "type": "timeseries", "title": "GC Young — Collection Rate (per min)",
+      "gridPos": { "x": 0, "y": 23, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_count{action=\"end of minor GC\"}[1m]) * 60", "legendFormat": "Young GC / min" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 22, "type": "timeseries", "title": "GC Young — Avg Pause Time (ms)",
+      "gridPos": { "x": 8, "y": 23, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_sum{action=\"end of minor GC\"}[5m]) / rate(jvm_gc_pause_seconds_count{action=\"end of minor GC\"}[5m])", "legendFormat": "Avg Pause ms" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 200 },
+          { "color": "red", "value": 500 }
+        ]}
+      }}
+    },
+
+    { "id": 23, "type": "timeseries", "title": "GC Old Generation — Full GC Events (per 5 min)",
+      "gridPos": { "x": 16, "y": 23, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "increase(jvm_gc_pause_seconds_count{action=\"end of major GC\"}[5m])", "legendFormat": "Full GC events" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 20 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "red", "value": 1 }
+        ]}
+      }}
+    },
+
+    { "id": 30, "type": "row", "title": "Threads & Classes", "collapsed": false,
+      "gridPos": { "x": 0, "y": 31, "w": 24, "h": 1 } },
+
+    { "id": 31, "type": "timeseries", "title": "JVM Threads",
+      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_threads_live_threads", "legendFormat": "Live" },
+        { "expr": "jvm_threads_daemon_threads", "legendFormat": "Daemon" },
+        { "expr": "jvm_threads_peak_threads", "legendFormat": "Peak" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 32, "type": "timeseries", "title": "Classes Loaded",
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_classes_loaded_classes", "legendFormat": "Loaded" },
+        { "expr": "rate(jvm_classes_unloaded_classes_total[5m]) * 300", "legendFormat": "Unloaded / 5m" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 40, "type": "row", "title": "CPU & OS", "collapsed": false,
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 1 } },
+
+    { "id": 41, "type": "timeseries", "title": "CPU Usage",
+      "gridPos": { "x": 0, "y": 41, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "process_cpu_usage * 100", "legendFormat": "JVM Process CPU %" },
+        { "expr": "system_cpu_usage * 100", "legendFormat": "System CPU %" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 42, "type": "timeseries", "title": "System Load & CPU Count",
+      "gridPos": { "x": 12, "y": 41, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "system_load_average_1m", "legendFormat": "Load Avg 1m" },
+        { "expr": "system_cpu_count", "legendFormat": "CPU Count" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 43, "type": "timeseries", "title": "File Descriptors",
+      "gridPos": { "x": 0, "y": 49, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "process_files_open_files", "legendFormat": "Open" },
+        { "expr": "process_files_max_files", "legendFormat": "Limit" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 44, "type": "timeseries", "title": "File Descriptor Usage %",
+      "gridPos": { "x": 12, "y": 49, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "process_files_open_files / process_files_max_files * 100", "legendFormat": "FD Usage %" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 60 },
+          { "color": "red", "value": 80 }
+        ]}
+      }}
+    },
+
+    { "id": 50, "type": "row", "title": "Tomcat Thread Pool & Requests", "collapsed": false,
+      "gridPos": { "x": 0, "y": 57, "w": 24, "h": 1 } },
+
+    { "id": 51, "type": "timeseries", "title": "Tomcat Threads",
+      "gridPos": { "x": 0, "y": 58, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "tomcat_threads_busy", "legendFormat": "Busy" },
+        { "expr": "tomcat_threads_current", "legendFormat": "Current" },
+        { "expr": "tomcat_threads_max", "legendFormat": "Max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 52, "type": "timeseries", "title": "Tomcat Thread Pool Usage %",
+      "gridPos": { "x": 12, "y": 58, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "tomcat_threads_busy / tomcat_threads_max * 100", "legendFormat": "Thread Pool %" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 60 },
+          { "color": "red", "value": 80 }
+        ]}
+      }}
+    },
+
+    { "id": 53, "type": "timeseries", "title": "Tomcat Request Rate",
+      "gridPos": { "x": 0, "y": 66, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(tomcat_request_count_total[1m]) * 60", "legendFormat": "Requests / min" },
+        { "expr": "rate(tomcat_error_count_total[1m]) * 60", "legendFormat": "Errors / min" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 54, "type": "timeseries", "title": "Tomcat Throughput (bytes/s)",
+      "gridPos": { "x": 12, "y": 66, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(tomcat_bytes_sent_total[1m])", "legendFormat": "Sent" },
+        { "expr": "rate(tomcat_bytes_received_total[1m])", "legendFormat": "Received" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 55, "type": "timeseries", "title": "Tomcat Avg Request Processing Time (ms)",
+      "gridPos": { "x": 0, "y": 74, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(tomcat_processing_time_ms_total[1m]) / rate(tomcat_request_count_total[1m])", "legendFormat": "Avg ms/request" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 56, "type": "timeseries", "title": "Tomcat Error Rate %",
+      "gridPos": { "x": 12, "y": 74, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(tomcat_error_count_total[5m]) / rate(tomcat_request_count_total[5m]) * 100", "legendFormat": "Error %" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "custom": { "lineWidth": 2, "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 1 },
+          { "color": "red", "value": 5 }
+        ]}
+      }}
+    },
+
+    { "id": 60, "type": "row", "title": "HikariCP Connection Pool", "collapsed": false,
+      "gridPos": { "x": 0, "y": 82, "w": 24, "h": 1 } },
+
+    { "id": 61, "type": "timeseries", "title": "HikariCP Connections",
+      "gridPos": { "x": 0, "y": 83, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "hikaricp_active_connections", "legendFormat": "Active" },
+        { "expr": "hikaricp_idle_connections", "legendFormat": "Idle" },
+        { "expr": "hikaricp_total_connections", "legendFormat": "Total" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 62, "type": "timeseries", "title": "HikariCP Pending Connections (thread starvation indicator)",
+      "gridPos": { "x": 12, "y": 83, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "hikaricp_pending_connections", "legendFormat": "Pending" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 20 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 1 },
+          { "color": "red", "value": 5 }
+        ]}
+      }}
+    },
+
+    { "id": 70, "type": "row", "title": "NIO Buffer Pools", "collapsed": false,
+      "gridPos": { "x": 0, "y": 91, "w": 24, "h": 1 } },
+
+    { "id": 71, "type": "timeseries", "title": "Buffer Pool Memory Used",
+      "gridPos": { "x": 0, "y": 92, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_buffer_memory_used_bytes{id=\"direct\"}", "legendFormat": "Direct" },
+        { "expr": "jvm_buffer_memory_used_bytes{id=\"mapped\"}", "legendFormat": "Mapped" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } } }
+    },
+
+    { "id": 72, "type": "timeseries", "title": "Buffer Count",
+      "gridPos": { "x": 8, "y": 92, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_buffer_count_buffers{id=\"direct\"}", "legendFormat": "Direct buffers" },
+        { "expr": "jvm_buffer_count_buffers{id=\"mapped\"}", "legendFormat": "Mapped buffers" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    },
+
+    { "id": 73, "type": "timeseries", "title": "Buffer Total Capacity",
+      "gridPos": { "x": 16, "y": 92, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "jvm_buffer_total_capacity_bytes{id=\"direct\"}", "legendFormat": "Direct capacity" },
+        { "expr": "jvm_buffer_total_capacity_bytes{id=\"mapped\"}", "legendFormat": "Mapped capacity" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 5 } } }
+    }
+
+  ]
+}
