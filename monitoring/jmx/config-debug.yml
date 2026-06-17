@@ -1,0 +1,44 @@
+# Debug config — captures raw bean strings so we can see exact pattern format.
+# Use temporarily to diagnose why GC/Tomcat/BufferPool/MemoryPool don't match.
+# DO NOT use in production — it outputs thousands of metrics.
+
+hostPort: "${LIFERAY_JMX_HOST}:${LIFERAY_JMX_PORT}"
+ssl: false
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+
+rules:
+  - pattern: "(.*GarbageCollector.*)"
+    name: debug_gc
+    value: 1
+    type: GAUGE
+    labels:
+      bean: "$1"
+
+  - pattern: "(.*MemoryPool.*)"
+    name: debug_mempool
+    value: 1
+    type: GAUGE
+    labels:
+      bean: "$1"
+
+  - pattern: "(.*BufferPool.*)"
+    name: debug_bufpool
+    value: 1
+    type: GAUGE
+    labels:
+      bean: "$1"
+
+  - pattern: "(.*Catalina.*)"
+    name: debug_catalina
+    value: 1
+    type: GAUGE
+    labels:
+      bean: "$1"
+
+  - pattern: "(.*hikari.*)"
+    name: debug_hikari
+    value: 1
+    type: GAUGE
+    labels:
+      bean: "$1"
