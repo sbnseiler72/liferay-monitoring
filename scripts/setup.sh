@@ -118,6 +118,11 @@ mkdir -p "$ROOT_DIR/monitoring/prometheus/data"
 mkdir -p "$ROOT_DIR/monitoring/grafana/data"
 echo "Data directories created."
 
+# --- Fix permissions for Prometheus (runs as UID 65534 / nobody) ---
+chown -R 65534:65534 "$ROOT_DIR/monitoring/prometheus/data" 2>/dev/null || \
+  chmod -R 777 "$ROOT_DIR/monitoring/prometheus/data"
+echo "Prometheus data directory permissions set."
+
 # --- Fix permissions for Grafana ---
 chown -R 472:472 "$ROOT_DIR/monitoring/grafana/data" 2>/dev/null || \
   chmod -R 777 "$ROOT_DIR/monitoring/grafana/data"
