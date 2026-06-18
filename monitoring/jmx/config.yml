@@ -14,6 +14,8 @@ hostPort: "${LIFERAY_JMX_HOST}:${LIFERAY_JMX_PORT}"
 ssl: false
 lowercaseOutputName: true
 lowercaseOutputLabelNames: true
+connectTimeout: 10
+readTimeout: 60
 
 rules:
 
