@@ -18,7 +18,8 @@ scrape_configs:
   - job_name: liferay_jvm
     static_configs:
       - targets: ['lf_monitor_jmx:9101']
-    scrape_interval: 15s
+    scrape_interval: 30s
+    scrape_timeout: 25s
 
   - job_name: postgresql
     static_configs:
