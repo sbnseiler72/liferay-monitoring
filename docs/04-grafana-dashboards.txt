@@ -9,10 +9,15 @@ Docker / Containers:
   Covers: CPU, RAM, network I/O per container (from cAdvisor)
 
 JVM Overview:
-  ID: 8563
-  Name: JVM overview (Micrometer)
-  Covers: Heap, GC, threads, classloaders
-  Note: Adjust metric names to match jmx_exporter labels if needed
+  File: monitoring/grafana/provisioning/dashboards/liferay-jvm.json
+  Name: Liferay JVM (JMX)
+  Auto-provisioned: yes (no manual import needed, appears under "Liferay Monitor" folder)
+  Covers: Heap/non-heap memory, G1 pool breakdown, GC rate and pause time,
+          threads, class loading, CPU, load average, file descriptors,
+          Tomcat thread pool and request metrics, HikariCP pool, NIO buffers
+  Note: Built for jmx_exporter — all panels have data. Community dashboard 8563
+        ("JVM overview (Micrometer)") requires Micrometer inside the JVM and
+        cannot be fully populated from JMX Exporter alone.
 
 Tomcat:
   ID: 4701
@@ -30,25 +35,13 @@ Nginx:
   Covers: Active connections, request rate, upstream status
 
 # =============================================================================
-# Key panels to add manually for Liferay-specific monitoring:
+# All panels are already in liferay-jvm.json (auto-provisioned).
+# Reference queries for custom panels or alerts:
 # =============================================================================
 
-Panel 1: Heap Usage % (Stat + Alert)
-  Query: jvm_heap_used_bytes / jvm_heap_max_bytes * 100
-  Thresholds: 70=yellow, 85=red
-
-Panel 2: Tomcat Thread Pool Usage %
-  Query: tomcat_threads_busy / tomcat_threads_max * 100
-  Thresholds: 60=yellow, 80=red
-
-Panel 3: HikariCP Pending Connections
-  Query: hikaricp_pending_connections
-  Thresholds: 1=yellow, 5=red
-
-Panel 4: GC Old Generation Events (Full GC)
-  Query: increase(jvm_gc_old_count_total[5m])
-  Thresholds: 0=green, 1=red
-
-Panel 5: G1 Young GC Pause Time (ms avg)
-  Query: rate(jvm_gc_young_time_ms_total[5m]) / rate(jvm_gc_young_count_total[5m])
-  Thresholds: 200=green, 500=yellow, 1000=red
+Heap Usage %:     jvm_memory_used_bytes{area="heap",id="Heap"} / jvm_memory_max_bytes{area="heap",id="Heap"} * 100
+Tomcat pool %:    tomcat_threads_busy / tomcat_threads_max * 100
+HikariCP pending: hikaricp_pending_connections
+Full GC events:   increase(jvm_gc_pause_seconds_count{action="end of major GC"}[5m])
+GC pause avg ms:  rate(jvm_gc_pause_seconds_sum{action="end of minor GC"}[5m]) / rate(jvm_gc_pause_seconds_count{action="end of minor GC"}[5m]) > 0
+FD usage %:       process_files_open_files / process_files_max_files * 100

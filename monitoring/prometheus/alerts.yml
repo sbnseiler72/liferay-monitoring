@@ -1,13 +1,24 @@
 groups:
 
   # =============================================================================
+  # Recording rules — metric aliases for dashboard compatibility
+  # process_threads is the same value as jvm_threads_live_threads; jmx_exporter
+  # cannot export the same MBean attribute under two names (first-match-wins),
+  # so we derive the alias here instead.
+  # =============================================================================
+  - name: liferay_recording
+    rules:
+      - record: process_threads
+        expr: jvm_threads_live_threads
+
+  # =============================================================================
   # JVM Alerts — heap pressure, GC storms, thread exhaustion
   # =============================================================================
   - name: liferay_jvm
     rules:
 
       - alert: JvmHeapCritical
-        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.85
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
         for: 2m
         labels:
           severity: critical
@@ -20,7 +31,7 @@ groups:
             Check for cache bloat or classloader leak.
 
       - alert: JvmHeapHigh
-        expr: jvm_heap_used_bytes / jvm_heap_max_bytes > 0.70
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.70
         for: 5m
         labels:
           severity: warning
@@ -30,32 +41,31 @@ groups:
           description: "JVM heap usage above 70% for 5 minutes."
 
       - alert: JvmFullGcDetected
-        expr: increase(jvm_gc_old_count_total[5m]) > 0
+        expr: increase(jvm_gc_collection_count_total{gc=~".*[Oo]ld.*|.*[Ff]ull.*|.*[Mm]ajor.*"}[5m]) > 0
         labels:
           severity: warning
           component: jvm
         annotations:
-          summary: "JVM Full GC (G1 Old Generation) triggered"
+          summary: "JVM Old Gen / Full GC triggered ({{ $labels.gc }})"
           description: >
-            G1 Old Generation GC occurred.
+            Old Generation or Full GC occurred.
             If recurring frequently, check for memory leak or oversized caches.
 
-      - alert: JvmGcPauseHigh
+      - alert: JvmGcTimeHigh
         expr: >
-          rate(jvm_gc_young_time_ms_total[5m]) /
-          rate(jvm_gc_young_count_total[5m]) > 500
+          sum(rate(jvm_gc_collection_time_ms_total[5m])) > 500
         for: 3m
         labels:
           severity: warning
           component: jvm
         annotations:
-          summary: "JVM GC pause time high ({{ $value }}ms avg)"
+          summary: "JVM GC time high ({{ $value }}ms/s avg)"
           description: >
-            Average GC pause exceeds 500ms.
-            MaxGCPauseMillis=200 is configured but not being met.
+            Total GC time rate exceeds 500ms/s.
+            Check for heap pressure — consider tuning MaxGCPauseMillis or increasing heap.
 
       - alert: JvmMetaspaceHigh
-        expr: jvm_nonheap_used_bytes > 480000000
+        expr: jvm_memory_used_bytes{area="nonheap"} > 480000000
         for: 5m
         labels:
           severity: warning
@@ -67,7 +77,7 @@ groups:
             Possible OSGi classloader leak — check bundle redeploys.
 
       - alert: JvmFileDescriptorHigh
-        expr: jvm_open_file_descriptors / jvm_max_file_descriptors > 0.80
+        expr: process_files_open_files / process_files_max_files > 0.80
         for: 5m
         labels:
           severity: warning
@@ -83,7 +93,7 @@ groups:
     rules:
 
       - alert: TomcatThreadPoolCritical
-        expr: tomcat_threads_busy / tomcat_threads_max > 0.80
+        expr: sum(tomcat_threads_busy) / sum(tomcat_threads_max) > 0.80
         for: 1m
         labels:
           severity: critical
@@ -96,7 +106,7 @@ groups:
             Known cause: servlet filter making synchronous DB/HTTP calls on url-pattern=/*.
 
       - alert: TomcatThreadPoolHigh
-        expr: tomcat_threads_busy / tomcat_threads_max > 0.60
+        expr: sum(tomcat_threads_busy) / sum(tomcat_threads_max) > 0.60
         for: 3m
         labels:
           severity: warning
@@ -107,8 +117,8 @@ groups:
 
       - alert: TomcatErrorRateHigh
         expr: >
-          rate(tomcat_error_count_total[5m]) /
-          rate(tomcat_request_count_total[5m]) > 0.05
+          sum(rate(tomcat_error_count_total[5m])) /
+          sum(rate(tomcat_request_count_total[5m])) > 0.05
         for: 3m
         labels:
           severity: warning

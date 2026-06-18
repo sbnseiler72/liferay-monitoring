@@ -48,7 +48,8 @@ services:
       - "127.0.0.1:19101:9101"
     volumes:
       - ./monitoring/jmx/config.yml:/opt/bitnami/jmx-exporter/config.yml:ro
-    command: ["9101", "/opt/bitnami/jmx-exporter/config.yml"]
+      - ./monitoring/jmx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
     restart: unless-stopped
     environment:
       LIFERAY_JMX_HOST: ${LIFERAY_JMX_HOST:-liferay}

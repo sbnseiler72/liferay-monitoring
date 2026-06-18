@@ -1,6 +1,13 @@
 # =============================================================================
 # JMX Exporter config for Liferay 7.x / Tomcat 9 / HikariCP
 # hostPort is read from environment variable substitution at runtime
+#
+# Metric names follow the Micrometer convention so Grafana dashboard 8563
+# ("JVM overview (Micrometer)", ID 8563) works without modification.
+# Alert rules in alerts.yml use the same names.
+#
+# jmx_exporter is first-match-wins: each MBean attribute must appear in
+# exactly ONE rule — duplicate patterns for the same attribute are ignored.
 # =============================================================================
 
 hostPort: "${LIFERAY_JMX_HOST}:${LIFERAY_JMX_PORT}"
@@ -11,126 +18,217 @@ lowercaseOutputLabelNames: true
 rules:
 
   # ---------------------------------------------------------------------------
-  # JVM Heap Memory
+  # JVM Heap Memory (Micrometer names — used by dashboard 8563 and alert rules)
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
-    name: jvm_heap_used_bytes
+    name: jvm_memory_used_bytes
     type: GAUGE
     help: "JVM heap memory used in bytes"
+    labels:
+      area: heap
+      id: "Heap"
 
   - pattern: 'java.lang<type=Memory><HeapMemoryUsage>max'
-    name: jvm_heap_max_bytes
+    name: jvm_memory_max_bytes
     type: GAUGE
     help: "JVM heap memory max in bytes"
+    labels:
+      area: heap
+      id: "Heap"
 
   - pattern: 'java.lang<type=Memory><HeapMemoryUsage>committed'
-    name: jvm_heap_committed_bytes
+    name: jvm_memory_committed_bytes
     type: GAUGE
     help: "JVM heap memory committed in bytes"
+    labels:
+      area: heap
+      id: "Heap"
 
   - pattern: 'java.lang<type=Memory><HeapMemoryUsage>init'
-    name: jvm_heap_init_bytes
+    name: jvm_memory_init_bytes
     type: GAUGE
     help: "JVM heap memory initial allocation in bytes"
+    labels:
+      area: heap
+      id: "Heap"
 
   # ---------------------------------------------------------------------------
-  # JVM Non-Heap (Metaspace) — OSGi classloader leak indicator
+  # JVM Non-Heap aggregate total (id="nonheap-total" — distinct from per-pool rules below)
+  # Using a different id avoids duplicate label sets with MemoryPool,name=Metaspace
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>used'
-    name: jvm_nonheap_used_bytes
+    name: jvm_memory_used_bytes
     type: GAUGE
-    help: "JVM non-heap (metaspace) used in bytes"
+    help: "JVM non-heap memory used in bytes (aggregate total)"
+    labels:
+      area: nonheap
+      id: "nonheap-total"
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>max'
+    name: jvm_memory_max_bytes
+    type: GAUGE
+    help: "JVM non-heap memory max in bytes (aggregate total)"
+    labels:
+      area: nonheap
+      id: "nonheap-total"
 
   - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>committed'
-    name: jvm_nonheap_committed_bytes
+    name: jvm_memory_committed_bytes
     type: GAUGE
-    help: "JVM non-heap committed in bytes"
+    help: "JVM non-heap memory committed in bytes (aggregate total)"
+    labels:
+      area: nonheap
+      id: "nonheap-total"
 
   # ---------------------------------------------------------------------------
-  # G1GC — Young Generation (frequent, short pauses)
+  # JVM Memory Pools
+  # jmx_exporter match string for multi-key beans omits domain and type= key:
+  #   java.lang:type=MemoryPool,name=Par Survivor Space → "MemoryPool, name=<n>><compositeKey>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionCount'
-    name: jvm_gc_young_count_total
+  - pattern: 'MemoryPool, name=(.+)><Usage>used'
+    name: jvm_memory_pool_used_bytes
+    type: GAUGE
+    help: "JVM memory pool used bytes"
+    labels:
+      pool: "$1"
+
+  - pattern: 'MemoryPool, name=(.+)><Usage>max'
+    name: jvm_memory_pool_max_bytes
+    type: GAUGE
+    help: "JVM memory pool max bytes"
+    labels:
+      pool: "$1"
+
+  - pattern: 'MemoryPool, name=(.+)><Usage>committed'
+    name: jvm_memory_pool_committed_bytes
+    type: GAUGE
+    help: "JVM memory pool committed bytes"
+    labels:
+      pool: "$1"
+
+  # ---------------------------------------------------------------------------
+  # NIO Buffer Pools
+  # java.nio:type=BufferPool,name=direct → "BufferPool, name=<n>><>attr"
+  # ---------------------------------------------------------------------------
+  - pattern: 'BufferPool, name=(.+)><>MemoryUsed'
+    name: jvm_buffer_memory_used_bytes
+    type: GAUGE
+    help: "NIO buffer pool memory used bytes"
+    labels:
+      id: "$1"
+
+  - pattern: 'BufferPool, name=(.+)><>Count'
+    name: jvm_buffer_count_buffers
+    type: GAUGE
+    help: "NIO buffer pool buffer count"
+    labels:
+      id: "$1"
+
+  - pattern: 'BufferPool, name=(.+)><>TotalCapacity'
+    name: jvm_buffer_total_capacity_bytes
+    type: GAUGE
+    help: "NIO buffer pool total capacity bytes"
+    labels:
+      id: "$1"
+
+  # ---------------------------------------------------------------------------
+  # GC — java.lang:type=GarbageCollector,name=<n> → "GarbageCollector, name=<n>><>attr"
+  # ---------------------------------------------------------------------------
+  - pattern: 'GarbageCollector, name=(.+)><>CollectionCount'
+    name: jvm_gc_collection_count_total
     type: COUNTER
-    help: "G1 Young Generation GC collection count"
+    help: "GC collection count by collector"
+    labels:
+      gc: "$1"
 
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Young Generation><>CollectionTime'
-    name: jvm_gc_young_time_ms_total
+  - pattern: 'GarbageCollector, name=(.+)><>CollectionTime'
+    name: jvm_gc_collection_time_ms_total
     type: COUNTER
-    help: "G1 Young Generation GC total time in ms"
+    help: "GC total collection time in ms by collector"
+    labels:
+      gc: "$1"
 
   # ---------------------------------------------------------------------------
-  # G1GC — Old Generation (rare, long pauses — crash precursor)
+  # Tomcat Thread Pool — Catalina:type=ThreadPool,name=<n> → "ThreadPool, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionCount'
-    name: jvm_gc_old_count_total
-    type: COUNTER
-    help: "G1 Old Generation GC count — non-zero means Full GC occurred"
-
-  - pattern: 'java.lang<type=GarbageCollector,name=G1 Old Generation><>CollectionTime'
-    name: jvm_gc_old_time_ms_total
-    type: COUNTER
-    help: "G1 Old Generation GC total time in ms"
-
-  # ---------------------------------------------------------------------------
-  # Tomcat Thread Pool — http-nio-8080
-  # Critical for detecting filter thread exhaustion
-  # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadCount'
+  - pattern: 'ThreadPool, name=(.+)><>currentThreadCount'
     name: tomcat_threads_current
     type: GAUGE
     help: "Tomcat current thread count"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>currentThreadsBusy'
+  - pattern: 'ThreadPool, name=(.+)><>currentThreadsBusy'
     name: tomcat_threads_busy
     type: GAUGE
-    help: "Tomcat busy threads — high value means thread pool pressure"
+    help: "Tomcat busy threads"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>maxThreads'
+  - pattern: 'ThreadPool, name=(.+)><>maxThreads'
     name: tomcat_threads_max
     type: GAUGE
     help: "Tomcat max thread pool size"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>connectionCount'
+  - pattern: 'ThreadPool, name=(.+)><>connectionCount'
     name: tomcat_connections_current
     type: GAUGE
     help: "Tomcat current active connections"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=ThreadPool,name="http-nio-8080"><>acceptCount'
+  - pattern: 'ThreadPool, name=(.+)><>acceptCount'
     name: tomcat_accept_count
     type: GAUGE
     help: "Tomcat accept queue length"
+    labels:
+      connector: "$1"
 
   # ---------------------------------------------------------------------------
-  # Tomcat Request Processor
+  # Tomcat Request Processor — Catalina:type=GlobalRequestProcessor,name=<n>
+  #   → "GlobalRequestProcessor, name=<n>><>attr"
   # ---------------------------------------------------------------------------
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>requestCount'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>requestCount'
     name: tomcat_request_count_total
     type: COUNTER
     help: "Tomcat total requests processed"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>errorCount'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>errorCount'
     name: tomcat_error_count_total
     type: COUNTER
     help: "Tomcat total error responses"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>processingTime'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>processingTime'
     name: tomcat_processing_time_ms_total
     type: COUNTER
     help: "Tomcat total request processing time in ms"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesReceived'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>bytesReceived'
     name: tomcat_bytes_received_total
     type: COUNTER
     help: "Tomcat total bytes received"
+    labels:
+      connector: "$1"
 
-  - pattern: 'Catalina<type=GlobalRequestProcessor,name="http-nio-8080"><>bytesSent'
+  - pattern: 'GlobalRequestProcessor, name=(.+)><>bytesSent'
     name: tomcat_bytes_sent_total
     type: COUNTER
     help: "Tomcat total bytes sent"
+    labels:
+      connector: "$1"
 
   # ---------------------------------------------------------------------------
   # HikariCP Connection Pool
+  # PendingConnections attribute was removed in HikariCP 4.x; ThreadsAwaitingConnection
+  # is the replacement. Both patterns are included — whichever exists will match.
   # ---------------------------------------------------------------------------
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>ActiveConnections'
     name: hikaricp_active_connections
@@ -140,7 +238,12 @@ rules:
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>PendingConnections'
     name: hikaricp_pending_connections
     type: GAUGE
-    help: "HikariCP threads waiting for a connection — non-zero means DB bottleneck"
+    help: "HikariCP threads waiting for a connection"
+
+  - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>ThreadsAwaitingConnection'
+    name: hikaricp_pending_connections
+    type: GAUGE
+    help: "HikariCP threads waiting for a connection"
 
   - pattern: 'com.zaxxer.hikari<type=Pool \(.*\)><>IdleConnections'
     name: hikaricp_idle_connections
@@ -156,24 +259,34 @@ rules:
   # OS / System metrics
   # ---------------------------------------------------------------------------
   - pattern: 'java.lang<type=OperatingSystem><>OpenFileDescriptorCount'
-    name: jvm_open_file_descriptors
+    name: process_files_open_files
     type: GAUGE
     help: "JVM open file descriptor count"
 
   - pattern: 'java.lang<type=OperatingSystem><>MaxFileDescriptorCount'
-    name: jvm_max_file_descriptors
+    name: process_files_max_files
     type: GAUGE
     help: "JVM max file descriptor limit"
 
   - pattern: 'java.lang<type=OperatingSystem><>SystemCpuLoad'
-    name: system_cpu_load_ratio
+    name: system_cpu_usage
     type: GAUGE
     help: "System-wide CPU load (0.0-1.0)"
 
   - pattern: 'java.lang<type=OperatingSystem><>ProcessCpuLoad'
-    name: jvm_process_cpu_load_ratio
+    name: process_cpu_usage
     type: GAUGE
     help: "JVM process CPU load (0.0-1.0)"
+
+  - pattern: 'java.lang<type=OperatingSystem><>AvailableProcessors'
+    name: system_cpu_count
+    type: GAUGE
+    help: "Number of available CPU processors"
+
+  - pattern: 'java.lang<type=OperatingSystem><>SystemLoadAverage'
+    name: system_load_average_1m
+    type: GAUGE
+    help: "System load average for the last minute"
 
   - pattern: 'java.lang<type=OperatingSystem><>FreePhysicalMemorySize'
     name: os_free_memory_bytes
@@ -184,3 +297,52 @@ rules:
     name: os_total_memory_bytes
     type: GAUGE
     help: "OS total physical memory in bytes"
+
+  # ---------------------------------------------------------------------------
+  # JVM Threads (Micrometer names)
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Threading><>ThreadCount'
+    name: jvm_threads_live_threads
+    type: GAUGE
+    help: "JVM live thread count"
+
+  - pattern: 'java.lang<type=Threading><>DaemonThreadCount'
+    name: jvm_threads_daemon_threads
+    type: GAUGE
+    help: "JVM daemon thread count"
+
+  - pattern: 'java.lang<type=Threading><>PeakThreadCount'
+    name: jvm_threads_peak_threads
+    type: GAUGE
+    help: "JVM peak thread count since JVM start or last reset"
+
+  - pattern: 'java.lang<type=Threading><>TotalStartedThreadCount'
+    name: jvm_threads_started_threads_total
+    type: COUNTER
+    help: "JVM total threads started since JVM start"
+
+  # ---------------------------------------------------------------------------
+  # JVM Class Loading (Micrometer names)
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=ClassLoading><>LoadedClassCount'
+    name: jvm_classes_loaded_classes
+    type: GAUGE
+    help: "JVM currently loaded class count"
+
+  - pattern: 'java.lang<type=ClassLoading><>UnloadedClassCount'
+    name: jvm_classes_unloaded_classes_total
+    type: COUNTER
+    help: "JVM total unloaded class count since JVM start"
+
+  # ---------------------------------------------------------------------------
+  # Process Uptime
+  # ---------------------------------------------------------------------------
+  - pattern: 'java.lang<type=Runtime><>Uptime'
+    name: process_uptime_seconds
+    type: GAUGE
+    help: "JVM uptime in milliseconds since start"
+
+  - pattern: 'java.lang<type=Runtime><>StartTime'
+    name: process_start_time_seconds
+    type: GAUGE
+    help: "JVM start time in milliseconds since epoch"
