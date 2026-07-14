@@ -89,7 +89,7 @@ services:
   # Nginx Log Exporter — parses json_access.log for detailed metrics
   # ---------------------------------------------------------------------------
   nginxlog_exporter:
-    image: martinhelmich/prometheus-nginxlog-exporter:latest
+    image: ghcr.io/martin-helmich/prometheus-nginxlog-exporter:latest
     container_name: lf_monitor_nginxlog
     networks:
       - monitor-internal
