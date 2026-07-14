@@ -4,7 +4,7 @@ listen:
 
 namespaces:
   - name: nginxlog
-    format: json
+    parser: json
     source:
       files:
         - /var/log/nginx/json_access.log
