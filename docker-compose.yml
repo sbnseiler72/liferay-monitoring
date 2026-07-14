@@ -86,6 +86,23 @@ services:
       - "127.0.0.1:19113:9113"
 
   # ---------------------------------------------------------------------------
+  # Nginx Log Exporter — parses json_access.log for detailed metrics
+  # ---------------------------------------------------------------------------
+  nginxlog_exporter:
+    image: martinhelmich/prometheus-nginxlog-exporter:latest
+    container_name: lf_monitor_nginxlog
+    networks:
+      - monitor-internal
+      - liferay-stack
+    volumes:
+      - ./monitoring/nginxlog/config.yml:/etc/prometheus-nginxlog-exporter.yml:ro
+      - ${NGINX_LOG_PATH:-/var/log/nginx}:/var/log/nginx:ro
+    command:
+      - "-config-file=/etc/prometheus-nginxlog-exporter.yml"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:19040:4040"
+  # ---------------------------------------------------------------------------
   # Prometheus — scrapes all exporters, evaluates alert rules
   # ---------------------------------------------------------------------------
   prometheus:
