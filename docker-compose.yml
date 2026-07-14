@@ -65,7 +65,7 @@ services:
       - monitor-internal
       - liferay-stack
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+      DATA_SOURCE_NAME: "user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=${POSTGRES_DB} sslmode=disable"
     restart: unless-stopped
     ports:
       - "127.0.0.1:19187:9187"
